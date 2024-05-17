@@ -3,9 +3,12 @@ package clientfactory
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/ruiboma/warlock/config"
 	"google.golang.org/grpc"
+	"log"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -79,12 +82,29 @@ func (f *PoolFactory) MakeConn(target string, ops ...grpc.DialOption) (*grpc.Cli
 // InitConn Initialize the create link
 func (f *PoolFactory) InitConn(conns chan *grpc.ClientConn, ops ...grpc.DialOption) error {
 	l := cap(conns) - len(conns)
+	s := sync.WaitGroup{}
+	s.Add(l)
+	errlock := sync.Mutex{}
+	errmsg := ""
 	for i := 1; i <= l; i++ {
-		cli, err := f.MakeConn(f.config.GetTarget(), ops...)
-		if err != nil {
-			return err
-		}
-		conns <- cli
+		go func() {
+			defer s.Done()
+			addr := f.config.GetTarget()
+			cli, err := f.MakeConn(addr, ops...)
+			if err != nil {
+				errlock.Lock()
+				errmsg = fmt.Sprintf("[grpc pool][%s] %s", addr, err.Error())
+				log.Println(errmsg)
+				errlock.Unlock()
+			}
+			conns <- cli
+		}()
+
+	}
+
+	s.Wait()
+	if len(errmsg) != 0 {
+		return errors.New(errmsg)
 	}
 	return nil
 

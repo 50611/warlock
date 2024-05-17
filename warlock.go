@@ -20,7 +20,7 @@ var (
 	errTimeout = errors.New("warlock: Connection timed out, check the address configuration or network status")
 )
 
-//CloseFunc should defer
+// CloseFunc should defer
 type CloseFunc func()
 type chanStat int
 
@@ -95,6 +95,7 @@ func NewWarlock(c *config.Config, ops ...grpc.DialOption) (*Pool, error) {
 	pool := &Pool{Config: c, conns: conns, factory: factory, ops: ops, ChannelStat: 1, usageAmount: 0, mLock: &sync.Mutex{}}
 	err := factory.InitConn(conns, ops...)
 	if err != nil {
+		pool.ClearPool()
 		return nil, err
 	}
 	return pool, nil
@@ -128,8 +129,10 @@ func (w *Pool) Acquire() (*grpc.ClientConn, CloseFunc, error) {
 			return nil, nil, errAcquire
 		default:
 			if w.Config.OverflowCap == false && w.usageAmount >= w.Config.MaxCap {
+				//不允许超过则继续等待
 				continue
 			} else {
+				//允许超过
 				Wops := append(w.ops, grpc.WithBlock())
 				clientconn, err := w.factory.MakeConn(w.Config.GetTarget(), Wops...)
 				if err != nil {
@@ -154,6 +157,7 @@ func (w *Pool) Close(client *grpc.ClientConn) {
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 			select {
+			//写入conns,如果超时,则 关闭，超时说明 池子里面已经最大了
 			case w.conns <- client:
 			case <-ctx.Done():
 				w.factory.Destroy(client)
