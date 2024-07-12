@@ -1,4 +1,4 @@
-module github.com/ruiboma/warlock
+module github.com/50611/warlock
 
 go 1.15
 
