@@ -24,6 +24,10 @@ var (
 type CloseFunc func()
 type chanStat int
 
+func Version() string {
+	return "1.0.0.0"
+}
+
 const (
 	isClose chanStat = iota
 	isOpen
