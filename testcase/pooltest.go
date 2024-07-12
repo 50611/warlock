@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ruiboma/warlock"
-	"github.com/ruiboma/warlock/config"
+	"github.com/50611/warlock"
+	"github.com/50611/warlock/config"
 	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/grpc"
 )

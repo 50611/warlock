@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ruiboma/warlock/config"
+	"github.com/50611/warlock/config"
 	"google.golang.org/grpc"
 	"log"
 	"strings"
