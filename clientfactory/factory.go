@@ -80,7 +80,10 @@ func (f *PoolFactory) MakeConn(target string, ops ...grpc.DialOption) (*grpc.Cli
 }
 
 // InitConn Initialize the create link
-func (f *PoolFactory) InitConn(conns chan *grpc.ClientConn, ops ...grpc.DialOption) error {
+func (f *PoolFactory) InitConn(conns chan *grpc.ClientConn, lazy bool, ops ...grpc.DialOption) error {
+	if lazy == true {
+		return nil
+	}
 	l := cap(conns) - len(conns)
 	s := sync.WaitGroup{}
 	s.Add(l)

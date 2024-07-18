@@ -57,7 +57,11 @@ func WithServerAdd(s *[]string) WarOption {
 		i.ServerAdds = s
 	}
 }
-
+func WithLazy(s bool) WarOption {
+	return func(i *config.Config) {
+		i.Lazy = s
+	}
+}
 func WithAcquireTimeOut(num time.Duration) WarOption {
 	return func(i *config.Config) {
 		i.AcquireTimeout = num
@@ -86,6 +90,7 @@ func NewConfig(ops ...WarOption) *config.Config {
 	c.DynamicLink = false
 	c.OverflowCap = true
 	c.AcquireTimeout = 3 * time.Second
+	c.Lazy = false
 	for _, f := range ops {
 		f(c)
 	}
@@ -97,7 +102,7 @@ func NewWarlock(c *config.Config, ops ...grpc.DialOption) (*Pool, error) {
 	conns := make(chan *grpc.ClientConn, c.MaxCap)
 	factory := clientfactory.NewPoolFactory(c)
 	pool := &Pool{Config: c, conns: conns, factory: factory, ops: ops, ChannelStat: 1, usageAmount: 0, mLock: &sync.Mutex{}}
-	err := factory.InitConn(conns, ops...)
+	err := factory.InitConn(conns, c.Lazy, ops...)
 	if err != nil {
 		pool.ClearPool()
 		return nil, err

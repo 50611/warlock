@@ -21,6 +21,7 @@ type Config struct {
 	AcquireTimeout time.Duration
 
 	GetTargetFunc GetTargetFunc
+	Lazy          bool
 }
 
 type GetTargetFunc func(c *Config) string
