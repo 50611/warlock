@@ -19,6 +19,8 @@ type Config struct {
 	OverflowCap bool
 	//获取超时时间
 	AcquireTimeout time.Duration
+	//connectTimeout
+	ConnectTimeout time.Duration
 
 	GetTargetFunc GetTargetFunc
 	Lazy          bool

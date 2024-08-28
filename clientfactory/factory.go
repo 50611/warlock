@@ -67,20 +67,20 @@ func (f *PoolFactory) Destroy(conn *grpc.ClientConn) error {
 }
 
 // MakeConn Users are not recommended to use this API
-func (f *PoolFactory) MakeConn(target string, ops ...grpc.DialOption) (*grpc.ClientConn, error) {
+func (f *PoolFactory) MakeConn(target string, connectTimeout time.Duration, ops ...grpc.DialOption) (*grpc.ClientConn, error) {
 	if target == "" || strings.Index(target, ":") == -1 {
 		return nil, errorTarget
 	}
 	if f.config.DynamicLink == true {
 		return grpc.Dial(target, ops...)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), connectTimeout)
 	defer cancel()
 	return grpc.DialContext(ctx, target, ops...)
 }
 
 // InitConn Initialize the create link
-func (f *PoolFactory) InitConn(conns chan *grpc.ClientConn, lazy bool, ops ...grpc.DialOption) error {
+func (f *PoolFactory) InitConn(conns chan *grpc.ClientConn, lazy bool, connectTimeout time.Duration, ops ...grpc.DialOption) error {
 	if lazy == true {
 		return nil
 	}
@@ -93,7 +93,7 @@ func (f *PoolFactory) InitConn(conns chan *grpc.ClientConn, lazy bool, ops ...gr
 		go func() {
 			defer s.Done()
 			addr := f.config.GetTarget()
-			cli, err := f.MakeConn(addr, ops...)
+			cli, err := f.MakeConn(addr, connectTimeout, ops...)
 			if err != nil {
 				errlock.Lock()
 				errmsg = fmt.Sprintf("[grpc pool][%s] %s", addr, err.Error())

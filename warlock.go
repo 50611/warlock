@@ -25,7 +25,7 @@ type CloseFunc func()
 type chanStat int
 
 func Version() string {
-	return "1.0.0.0"
+	return "1.0.1.0"
 }
 
 const (
@@ -68,6 +68,12 @@ func WithAcquireTimeOut(num time.Duration) WarOption {
 	}
 }
 
+func WithConnectTimeOut(num time.Duration) WarOption {
+	return func(i *config.Config) {
+		i.ConnectTimeout = num
+	}
+}
+
 // Custom get address
 func WithGetTargetFunc(g config.GetTargetFunc) WarOption {
 	return func(c *config.Config) {
@@ -90,6 +96,7 @@ func NewConfig(ops ...WarOption) *config.Config {
 	c.DynamicLink = false
 	c.OverflowCap = true
 	c.AcquireTimeout = 3 * time.Second
+	c.ConnectTimeout = 10 * time.Second
 	c.Lazy = false
 	for _, f := range ops {
 		f(c)
@@ -102,7 +109,7 @@ func NewWarlock(c *config.Config, ops ...grpc.DialOption) (*Pool, error) {
 	conns := make(chan *grpc.ClientConn, c.MaxCap)
 	factory := clientfactory.NewPoolFactory(c)
 	pool := &Pool{Config: c, conns: conns, factory: factory, ops: ops, ChannelStat: 1, usageAmount: 0, mLock: &sync.Mutex{}}
-	err := factory.InitConn(conns, c.Lazy, ops...)
+	err := factory.InitConn(conns, c.Lazy, c.ConnectTimeout, ops...)
 	if err != nil {
 		pool.ClearPool()
 		return nil, err
@@ -143,7 +150,7 @@ func (w *Pool) Acquire() (*grpc.ClientConn, CloseFunc, error) {
 			} else {
 				//允许超过
 				Wops := append(w.ops, grpc.WithBlock())
-				clientconn, err := w.factory.MakeConn(w.Config.GetTarget(), Wops...)
+				clientconn, err := w.factory.MakeConn(w.Config.GetTarget(), w.Config.ConnectTimeout, Wops...)
 				if err != nil {
 					if err == context.DeadlineExceeded {
 						return nil, nil, errTimeout
