@@ -25,7 +25,7 @@ type CloseFunc func()
 type chanStat int
 
 func Version() string {
-	return "1.0.1.0"
+	return "1.0.2.0"
 }
 
 const (

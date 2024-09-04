@@ -99,8 +99,10 @@ func (f *PoolFactory) InitConn(conns chan *grpc.ClientConn, lazy bool, connectTi
 				errmsg = fmt.Sprintf("[grpc pool][%s] %s", addr, err.Error())
 				log.Println(errmsg)
 				errlock.Unlock()
+			} else {
+				conns <- cli
 			}
-			conns <- cli
+
 		}()
 
 	}
